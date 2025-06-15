@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useNotesStore, Message } from '../store/notesStore';
 import { Bold, Italic, Image as ImageIcon } from 'lucide-react';
@@ -120,8 +119,8 @@ const MessageInput: React.FC = () => {
 
       {/* Action Buttons - Compact */}
       <div className="flex items-center justify-between">
-        <div className="text-xs text-muted-foreground">
-          Press Enter to send, Shift+Enter for new line
+        <div className="text-[10px] text-muted-foreground/70 leading-none">
+          Enter to send, Shift+Enter for new line
         </div>
         
         <button
