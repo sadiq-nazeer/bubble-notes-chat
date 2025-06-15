@@ -69,7 +69,7 @@ const ChatWindow: React.FC = () => {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
@@ -92,8 +92,7 @@ const ChatWindow: React.FC = () => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
-        {/* Reduce vertical spacing below */}
-        <div className="space-y-[0.375em]"> {/* ~1.5 line spacing relative spacing */}
+        <div className="space-y-1">
           {activeNote.messages.length === 0 ? (
             <div className="text-center py-12">
               <div className="neuro-inset rounded-2xl p-8 inline-block">
