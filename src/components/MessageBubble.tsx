@@ -124,8 +124,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
   return (
     <div className="flex justify-start group" ref={editContainerRef}>
       <div className="flex items-start space-x-2 w-full max-w-3xl">
-        <div className="w-16 flex-shrink-0 text-center text-[10px] text-muted-foreground/80 pt-2.5 space-y-1">
-          <span>
+        <div className="w-14 flex-shrink-0 text-center text-[9px] text-muted-foreground/90 pt-2 space-y-0.5">
+          <span className="block leading-tight">
             {new Date(message.timestamp).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit',
@@ -133,7 +133,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
             })}
           </span>
           {message.edited && (
-            <span className="inline-block bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium text-[9px]">
+            <span className="inline-block bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium text-[8px] leading-tight">
               Edited
             </span>
           )}
