@@ -53,10 +53,10 @@ const MessageActions: React.FC<MessageActionsProps> = ({
         <>
           <button
             onClick={handleCopy}
-            className="neuro-button rounded-lg p-1.5 text-blue-500 hover:text-blue-600"
+            className="neuro-button rounded-lg p-2 text-blue-500 hover:text-blue-600"
             aria-label="Copy message"
           >
-            <Copy className="h-3 w-3" />
+            <Copy className="h-4 w-4" />
           </button>
           <button
             onClick={handleEdit}
