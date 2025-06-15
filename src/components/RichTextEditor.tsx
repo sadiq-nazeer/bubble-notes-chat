@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Type } from 'lucide-react';
 
@@ -56,36 +57,47 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
-  // Move per-line: store which kind of inline formats are active for which line
-  const [lineActiveInlineFormats, setLineActiveInlineFormats] = useState<
-    Record<number, Set<'bold' | 'italic'>>
-  >({ 0: new Set() });
+  const handleLineFormatChange = (format: 'plain' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol') => {
+    setSelectedFormat(format);
+    const newLines = [...lines];
+    newLines[currentLineIndex] = {
+      ...newLines[currentLineIndex],
+      type: format
+    };
+    setLines(newLines);
+    updateContent(newLines);
+  };
 
-  // Updates both content and the mapping for bold/italic
+  const handleInlineFormatToggle = (format: 'bold' | 'italic') => {
+    const newActiveFormats = new Set(activeInlineFormats);
+    if (newActiveFormats.has(format)) {
+      newActiveFormats.delete(format);
+    } else {
+      newActiveFormats.add(format);
+    }
+    setActiveInlineFormats(newActiveFormats);
+  };
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const textLines = value.split('\n');
     const newLines: LineFormat[] = [];
-    const newLineInlineFormats: Record<number, Set<'bold' | 'italic'>> = {};
 
     textLines.forEach((lineContent, index) => {
       const existingLine = lines[index];
       newLines.push({
-        type: existingLine?.type || (index === currentLineIndex ? selectedFormat : (lines[index-1]?.type === "ul" ? "ul" : lines[index-1]?.type === "ol" ? "ol" : 'plain')),
+        type: existingLine?.type || (index === currentLineIndex ? selectedFormat : 'plain'),
         content: lineContent,
         inlineFormats: existingLine?.inlineFormats || []
       });
-      newLineInlineFormats[index] = lineActiveInlineFormats[index] || new Set();
     });
 
     // Ensure we always have at least one line
     if (newLines.length === 0) {
       newLines.push({ type: 'plain', content: '', inlineFormats: [] });
-      newLineInlineFormats[0] = new Set();
     }
 
     setLines(newLines);
-    setLineActiveInlineFormats(newLineInlineFormats);
     updateContent(newLines);
 
     // Update current line index based on cursor position
@@ -103,72 +115,46 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     setSelectedFormat(newLines[lineIndex]?.type || 'plain');
   };
 
-  // When style format is picked, it sets for the current line—in a new location, left to the text line
-  const handleLineFormatChange = (lineIdx: number, format: 'plain' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol') => {
-    const newLines = [...lines];
-    newLines[lineIdx] = {
-      ...newLines[lineIdx],
-      type: format
-    };
-    setLines(newLines);
-    setSelectedFormat(format);
-    updateContent(newLines);
+  const updateContent = (newLines: LineFormat[]) => {
+    const formattedContent = newLines.map(line => {
+      let content = line.content;
+      
+      // Apply inline formatting
+      const sortedFormats = [...line.inlineFormats].sort((a, b) => b.start - a.start);
+      sortedFormats.forEach(format => {
+        const before = content.slice(0, format.start);
+        const middle = content.slice(format.start, format.end);
+        const after = content.slice(format.end);
+        
+        const wrapper = format.type === 'bold' ? '**' : '*';
+        content = before + wrapper + middle + wrapper + after;
+      });
+
+      // Apply block formatting
+      const prefix = getLinePrefix(line.type);
+      return prefix + content;
+    }).join('\n');
+
+    onContentChange(formattedContent);
   };
 
-  // Inline format per line — bold/italic
-  const handleInlineFormatToggle = (format: 'bold' | 'italic', lineIdx?: number) => {
-    const targetIdx = lineIdx === undefined ? currentLineIndex : lineIdx;
-    const currentFormats = new Set(lineActiveInlineFormats[targetIdx] || []);
-    if (currentFormats.has(format)) {
-      currentFormats.delete(format);
-    } else {
-      currentFormats.add(format);
-    }
-    setLineActiveInlineFormats({
-      ...lineActiveInlineFormats,
-      [targetIdx]: currentFormats
-    });
-  };
-
-  // When typing, add formatting for current line
-  const getTextareaLineClass = (idx: number) => {
-    const f = lineActiveInlineFormats[idx] || new Set();
-    let className = "";
-    if (f.has("bold")) className += " font-bold ";
-    if (f.has("italic")) className += " italic ";
-    return className.trim();
-  };
-
-  // On submit: call updateContent to ensure formatting is saved
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       if (e.shiftKey) {
-        // Insert new line with previous style for lists (ul, ol), else plain
+        // Shift+Enter: new line with plain formatting
         e.preventDefault();
         const textarea = e.currentTarget;
         const cursorPos = textarea.selectionStart;
         const value = textarea.value;
-        const textLines = value.split('\n');
-        const prevType = lines[currentLineIndex]?.type;
-        let nextType: LineFormat["type"] = "plain";
-        if (prevType === "ul" || prevType === "ol") {
-          nextType = prevType;
-        }
         const newValue = value.slice(0, cursorPos) + '\n' + value.slice(cursorPos);
-
+        
         const newLines = [...lines];
         const newLineIndex = currentLineIndex + 1;
-        newLines.splice(newLineIndex, 0, { type: nextType, content: '', inlineFormats: [] });
-
-        // Add to active formats object as well
-        const newLineInlineFormats = { ...lineActiveInlineFormats };
-        newLineInlineFormats[newLineIndex] = new Set();
-
+        newLines.splice(newLineIndex, 0, { type: 'plain', content: '', inlineFormats: [] });
         setLines(newLines);
-        setLineActiveInlineFormats(newLineInlineFormats);
         setCurrentLineIndex(newLineIndex);
-        setSelectedFormat(nextType);
-
+        setSelectedFormat('plain');
+        
         // Update textarea value and cursor position
         setTimeout(() => {
           if (textareaRef.current) {
@@ -184,86 +170,107 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
-  // For visual display: move the per-line format picker left of the text input
+  const renderTextareaContent = () => {
+    return lines.map((line, index) => {
+      const prefix = getLinePrefix(line.type);
+      const isCurrentLine = index === currentLineIndex;
+      
+      return (
+        <div key={index} className="flex items-start">
+          {prefix && (
+            <span className={`text-primary/60 font-mono text-sm mr-1 ${isCurrentLine ? 'text-primary' : ''}`}>
+              {prefix}
+            </span>
+          )}
+          <span className={`flex-1 ${isCurrentLine && activeInlineFormats.has('bold') ? 'font-bold' : ''} ${isCurrentLine && activeInlineFormats.has('italic') ? 'italic' : ''}`}>
+            {line.content}
+          </span>
+        </div>
+      );
+    });
+  };
+
+  const currentLineFormatted = lines[currentLineIndex]?.type || 'plain';
+
   return (
     <div className="space-y-3">
-      <div className="text-[10px] text-muted-foreground/70 px-2 mb-1">
-        Enter to send • Shift+Enter for new line (style persists for lists) • Select style & bold/italic per line
-      </div>
-      <div className="neuro-inset rounded-xl p-2 relative">
-        {/* For each line, show style picker left, input center */}
-        {lines.map((line, idx) => (
-          <div key={idx} className="flex items-center mb-1 space-x-2">
-            <div className="flex flex-col items-center min-w-[68px]">
-              <select
-                value={line.type}
-                onChange={e => handleLineFormatChange(idx, e.target.value as any)}
-                className="neuro-button px-2 py-1 rounded text-xs font-medium text-primary w-[64px] focus:outline-none"
-                style={{
-                  background: 'var(--background)',
-                  border: 0,
-                  boxShadow: 'var(--tw-ring-shadow)'
-                }}
-              >
-                <option value="plain">Normal</option>
-                <option value="h1">H1</option>
-                <option value="h2">H2</option>
-                <option value="h3">H3</option>
-                <option value="ul">Bullets</option>
-                <option value="ol">Numbers</option>
-              </select>
-              {/* inline formats for current line */}
-              <div className="flex mt-1 gap-1">
-                <button
-                  type="button"
-                  onClick={() => handleInlineFormatToggle('bold', idx)}
-                  className={`px-1 py-0.5 rounded text-[11px] ${lineActiveInlineFormats[idx]?.has("bold") ? "bg-primary/10 text-primary font-bold neuro-pressed" : "text-muted-foreground hover:text-primary"}`}
-                >
-                  <b>B</b>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInlineFormatToggle('italic', idx)}
-                  className={`px-1 py-0.5 rounded text-[11px] ${lineActiveInlineFormats[idx]?.has("italic") ? "bg-primary/10 text-primary font-semibold italic neuro-pressed" : "text-muted-foreground hover:text-primary"}`}
-                >
-                  <em>I</em>
-                </button>
-              </div>
+      {/* Format Toolbar */}
+      <div className="flex flex-wrap gap-1">
+        {formatButtons.map((btn) => (
+          <button
+            key={btn.key}
+            onClick={() => handleLineFormatChange(btn.key as any)}
+            className={`neuro-button rounded-lg px-2 py-1 text-xs font-medium transition-all ${
+              currentLineFormatted === btn.key
+                ? 'text-primary ring-1 ring-primary/30 neuro-pressed' 
+                : 'text-muted-foreground hover:text-primary'
+            }`}
+          >
+            <div className="flex items-center space-x-1">
+              <btn.icon className="h-3 w-3" />
+              <span>{btn.label}</span>
             </div>
-            {/* Textarea for content */}
-            <textarea
-              ref={idx === currentLineIndex ? textareaRef : undefined}
-              value={line.content}
-              onChange={e => {
-                // update single line in lines
-                const newLines = [...lines];
-                newLines[idx].content = e.target.value;
-                setLines(newLines);
-                updateContent(newLines);
-              }}
-              onFocus={() => {
-                setCurrentLineIndex(idx);
-                setSelectedFormat(lines[idx]?.type || 'plain');
-              }}
-              className={`flex-1 bg-transparent border-none outline-none text-foreground placeholder-muted-foreground resize-none text-sm py-1 ${getTextareaLineClass(idx)}`}
-              placeholder={idx === 0 ? placeholder : ""}
-              rows={1}
-              style={{borderBottom: '1px solid #eee'}}
-            />
-          </div>
+          </button>
+        ))}
+        
+        <div className="w-px h-6 bg-border mx-1" />
+        
+        {inlineFormatButtons.map((btn) => (
+          <button
+            key={btn.key}
+            onClick={() => handleInlineFormatToggle(btn.key as any)}
+            className={`neuro-button rounded-lg px-2 py-1 text-xs font-medium transition-all ${
+              activeInlineFormats.has(btn.key as any)
+                ? 'text-primary ring-1 ring-primary/30 neuro-pressed' 
+                : 'text-muted-foreground hover:text-primary'
+            }`}
+          >
+            <div className="flex items-center space-x-1">
+              <btn.icon className="h-3 w-3" />
+              <span>{btn.label}</span>
+            </div>
+          </button>
         ))}
       </div>
-      <div className="flex justify-between mt-2">
-        <div className="text-[10px] text-muted-foreground/70 px-2">
-          Style/Bold/Italic on left. "Enter" to send, "Shift+Enter" for new line with list/heading.
+
+      {/* Rich Text Input */}
+      <div className="neuro-inset rounded-xl p-3 relative">
+        <textarea
+          ref={textareaRef}
+          value={lines.map(line => line.content).join('\n')}
+          onChange={handleTextChange}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full bg-transparent border-none outline-none text-foreground placeholder-muted-foreground resize-none text-sm"
+          rows={Math.max(3, lines.length)}
+        />
+        
+        {/* Visual formatting overlay */}
+        <div className="absolute inset-3 pointer-events-none overflow-hidden">
+          <div className="text-sm leading-normal whitespace-pre-wrap break-words">
+            {lines.map((line, index) => {
+              const prefix = getLinePrefix(line.type);
+              return (
+                <div key={index} className="flex items-start min-h-[1.25rem]">
+                  {prefix && (
+                    <span className="text-primary/60 font-mono mr-1 flex-shrink-0">
+                      {prefix}
+                    </span>
+                  )}
+                  <span className="flex-1 invisible">
+                    {line.content || '\u00A0'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={onSubmit}
-          className="neuro-button rounded-lg px-5 py-1.5 text-sm font-semibold text-primary ring-1 ring-primary/20"
-        >
-          Send
-        </button>
+      </div>
+
+      {/* Help Text */}
+      <div className="text-[10px] text-muted-foreground/70 px-2">
+        <div>Enter to send • Shift+Enter for new line (plain style)</div>
+        <div>Select format for current line • Use Bold/Italic for inline formatting</div>
       </div>
     </div>
   );
