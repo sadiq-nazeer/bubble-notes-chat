@@ -31,46 +31,46 @@ const MessageActions: React.FC<MessageActionsProps> = ({
   };
 
   return (
-    <div className="flex-shrink-0 flex flex-col items-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+    <div className="flex-shrink-0 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
       {isEditing ? (
         <>
           <button
             onClick={handleSave}
-            className="neuro-button rounded-lg p-2 text-green-500 hover:text-green-600"
+            className="neuro-button rounded-lg p-1.5 text-green-500 hover:text-green-600"
             aria-label="Save changes"
           >
-            <Check className="h-4 w-4" />
+            <Check className="h-3 w-3" />
           </button>
           <button
             onClick={handleCancel}
-            className="neuro-button rounded-lg p-2 text-gray-500 hover:text-gray-600"
+            className="neuro-button rounded-lg p-1.5 text-gray-500 hover:text-gray-600"
             aria-label="Cancel edit"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
           </button>
         </>
       ) : (
         <>
           <button
             onClick={handleCopy}
-            className="neuro-button rounded-lg p-2 text-blue-500 hover:text-blue-600"
+            className="neuro-button rounded-lg p-1.5 text-blue-500 hover:text-blue-600"
             aria-label="Copy message"
           >
-            <Copy className="h-4 w-4" />
+            <Copy className="h-3 w-3" />
           </button>
           <button
             onClick={handleEdit}
-            className="neuro-button rounded-lg p-2 text-primary hover:text-primary/80"
+            className="neuro-button rounded-lg p-1.5 text-primary hover:text-primary/80"
             aria-label="Edit message"
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-3 w-3" />
           </button>
           <button
             onClick={() => deleteMessage(message.id)}
-            className="neuro-button rounded-lg p-2 text-red-400 hover:text-red-600"
+            className="neuro-button rounded-lg p-1.5 text-red-400 hover:text-red-600"
             aria-label="Delete message"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3" />
           </button>
         </>
       )}
