@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useNotesStore, Message } from '../store/notesStore';
 import { Bold, Italic, Image as ImageIcon } from 'lucide-react';
@@ -34,6 +35,31 @@ const MessageInput: React.FC = () => {
     }
   };
 
+  const getFormatPrefix = (selectedFormat: Message['format']): string => {
+    switch (selectedFormat) {
+      case 'h1': return '# ';
+      case 'h2': return '## ';
+      case 'h3': return '### ';
+      case 'ul': return '- ';
+      case 'ol': return '1. ';
+      default: return '';
+    }
+  };
+
+  const getPlaceholder = (selectedFormat: Message['format']): string => {
+    const prefix = getFormatPrefix(selectedFormat);
+    switch (selectedFormat) {
+      case 'h1': return `${prefix}Type your heading...`;
+      case 'h2': return `${prefix}Type your heading...`;
+      case 'h3': return `${prefix}Type your heading...`;
+      case 'bold': return 'Type your **bold** text...';
+      case 'italic': return 'Type your *italic* text...';
+      case 'ul': return `${prefix}Type your list item...`;
+      case 'ol': return `${prefix}Type your list item...`;
+      default: return 'Type your message... Use # for headings, **bold**, *italic*, `code`';
+    }
+  };
+
   const formatButtons = [
     { key: 'plain', label: 'Normal', active: format === 'plain' },
     { key: 'h1', label: 'H1', active: format === 'h1' },
@@ -44,6 +70,17 @@ const MessageInput: React.FC = () => {
     { key: 'ul', label: 'Bullets', active: format === 'ul' },
     { key: 'ol', label: 'Numbers', active: format === 'ol' },
   ];
+
+  const renderTextareaContent = () => {
+    const prefix = getFormatPrefix(format);
+    if (!prefix) return null;
+
+    return (
+      <div className="absolute inset-0 pointer-events-none flex items-start pt-2 px-3">
+        <span className="text-primary/60 font-mono text-sm">{prefix}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 space-y-3">
@@ -99,14 +136,17 @@ const MessageInput: React.FC = () => {
         </div>
       )}
 
-      {/* Text Input - Compact */}
-      <div className="neuro-inset rounded-xl p-3">
+      {/* Text Input with Format Prefix - Compact */}
+      <div className="neuro-inset rounded-xl p-3 relative">
+        {renderTextareaContent()}
         <textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={`Type your ${format !== 'plain' ? format.toUpperCase() + ' ' : ''}message...`}
-          className="w-full bg-transparent border-none outline-none text-foreground placeholder-muted-foreground resize-none text-sm"
+          placeholder={getPlaceholder(format)}
+          className={`w-full bg-transparent border-none outline-none text-foreground placeholder-muted-foreground resize-none text-sm ${
+            getFormatPrefix(format) ? 'pl-8' : ''
+          }`}
           rows={2}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -116,6 +156,17 @@ const MessageInput: React.FC = () => {
           }}
         />
       </div>
+
+      {/* Format Help Text */}
+      {format !== 'plain' && (
+        <div className="text-[10px] text-muted-foreground/70 px-2">
+          {format === 'bold' && 'Wrap text with **bold** for formatting'}
+          {format === 'italic' && 'Wrap text with *italic* for formatting'}
+          {(format === 'h1' || format === 'h2' || format === 'h3') && 'Each line will be formatted as a heading'}
+          {format === 'ul' && 'Each line will be a bullet point'}
+          {format === 'ol' && 'Each line will be numbered'}
+        </div>
+      )}
 
       {/* Action Buttons - Compact */}
       <div className="flex items-center justify-between">
