@@ -12,6 +12,108 @@ interface MessageContentProps {
   handleEdit: () => void;
 }
 
+type BlockFormat = 'plain' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol';
+
+const getLineBlockFormat = (line: string): { format: BlockFormat, content: string, olIndex?: number} => {
+  const trimmedLine = line.trim();
+  if (trimmedLine.startsWith('# ')) {
+    return { format: 'h1', content: trimmedLine.substring(2) };
+  } else if (trimmedLine.startsWith('## ')) {
+    return { format: 'h2', content: trimmedLine.substring(3) };
+  } else if (trimmedLine.startsWith('### ')) {
+    return { format: 'h3', content: trimmedLine.substring(4) };
+  } else if (trimmedLine.startsWith('- ')) {
+    return { format: 'ul', content: trimmedLine.substring(2) };
+  } else if (/^\d+\.\s/.test(trimmedLine)) {
+    // numbered list (ol)
+    const parts = trimmedLine.match(/^(\d+)\.\s(.*)/);
+    if (parts) {
+      return { format: 'ol', content: parts[2], olIndex: Number(parts[1])};
+    }
+  }
+  return { format: 'plain', content: line };
+};
+
+// Very simple inline md parser: will parse **bold**, *italic*, and `code`
+function parseInlineMarkdown(content: string): (string | JSX.Element)[] {
+  // Handle code first, then bold, then italic
+  let elements: (string | JSX.Element)[] = [];
+  let remaining = content;
+  while (remaining.length > 0) {
+    const codeIdx = remaining.indexOf('`');
+    const boldIdx = remaining.indexOf('**');
+    const italicIdx = remaining.indexOf('*');
+    let nextIdx = -1;
+
+    // Find earliest markdown marker
+    [codeIdx, boldIdx, italicIdx].forEach((idx) => {
+      if (idx !== -1 && (nextIdx === -1 || idx < nextIdx)) nextIdx = idx;
+    });
+
+    if (nextIdx === -1) {
+      elements.push(remaining);
+      break;
+    }
+
+    if (nextIdx > 0) {
+      elements.push(remaining.substring(0, nextIdx));
+      remaining = remaining.substring(nextIdx);
+    }
+
+    // Inline code match
+    if (remaining.startsWith('`')) {
+      const closeIdx = remaining.indexOf('`', 1);
+      if (closeIdx > 0) {
+        elements.push(
+          <code key={elements.length} className="bg-muted px-1 rounded text-[90%]">{remaining.slice(1, closeIdx)}</code>
+        );
+        remaining = remaining.slice(closeIdx + 1);
+        continue;
+      } else {
+        elements.push('`');
+        remaining = remaining.slice(1);
+        continue;
+      }
+    }
+
+    // Bold match
+    if (remaining.startsWith('**')) {
+      const closeIdx = remaining.indexOf('**', 2);
+      if (closeIdx > 1) {
+        elements.push(
+          <strong key={elements.length} className="font-bold">{remaining.slice(2, closeIdx)}</strong>
+        );
+        remaining = remaining.slice(closeIdx + 2);
+        continue;
+      } else {
+        elements.push('**');
+        remaining = remaining.slice(2);
+        continue;
+      }
+    }
+
+    // Italic match (must not be part of a bold match)
+    if (remaining.startsWith('*')) {
+      const closeIdx = remaining.indexOf('*', 1);
+      if (closeIdx > 0) {
+        elements.push(
+          <em key={elements.length} className="italic">{remaining.slice(1, closeIdx)}</em>
+        );
+        remaining = remaining.slice(closeIdx + 1);
+        continue;
+      } else {
+        elements.push('*');
+        remaining = remaining.slice(1);
+        continue;
+      }
+    }
+    // If nothing matched (shouldn't happen):
+    elements.push(remaining[0]);
+    remaining = remaining.slice(1);
+  }
+  return elements;
+}
+
 const MessageContent: React.FC<MessageContentProps> = ({
   message,
   isEditing,
@@ -21,52 +123,8 @@ const MessageContent: React.FC<MessageContentProps> = ({
   handleKeyDown,
   handleEdit
 }) => {
-  const parseLineFormat = (line: string) => {
-    const trimmedLine = line.trim();
-    
-    if (trimmedLine.startsWith('# ')) {
-      return { format: 'h1', content: trimmedLine.substring(2) };
-    } else if (trimmedLine.startsWith('## ')) {
-      return { format: 'h2', content: trimmedLine.substring(3) };
-    } else if (trimmedLine.startsWith('### ')) {
-      return { format: 'h3', content: trimmedLine.substring(4) };
-    } else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**') && trimmedLine.length > 4) {
-      return { format: 'bold', content: trimmedLine.slice(2, -2) };
-    } else if (trimmedLine.startsWith('*') && trimmedLine.endsWith('*') && trimmedLine.length > 2) {
-      return { format: 'italic', content: trimmedLine.slice(1, -1) };
-    } else if (trimmedLine.startsWith('- ')) {
-      return { format: 'ul', content: trimmedLine.substring(2) };
-    } else if (/^\d+\.\s/.test(trimmedLine)) {
-      return { format: 'ol', content: trimmedLine.replace(/^\d+\.\s/, '') };
-    }
-    
-    return { format: 'plain', content: trimmedLine };
-  };
 
-  const renderFormattedLine = (format: string, content: string, index: number) => {
-    const baseClasses = "leading-snug";
-    const key = `line-${index}`;
-    
-    switch (format) {
-      case 'h1':
-        return <h1 key={key} className={`text-2xl font-bold ${baseClasses} mb-2`}>{content}</h1>;
-      case 'h2':
-        return <h2 key={key} className={`text-xl font-bold ${baseClasses} mb-1.5`}>{content}</h2>;
-      case 'h3':
-        return <h3 key={key} className={`text-lg font-bold ${baseClasses} mb-1`}>{content}</h3>;
-      case 'bold':
-        return <p key={key} className={`font-bold ${baseClasses}`}>{content}</p>;
-      case 'italic':
-        return <p key={key} className={`italic ${baseClasses}`}>{content}</p>;
-      case 'ul':
-        return <div key={key} className="flex items-start"><span className="mr-2">•</span><span className={baseClasses}>{content}</span></div>;
-      case 'ol':
-        return <div key={key} className="flex items-start"><span className="mr-2">{index + 1}.</span><span className={baseClasses}>{content}</span></div>;
-      default:
-        return <p key={key} className={baseClasses}>{content}</p>;
-    }
-  };
-
+  // Returns an array of rendered block elements for the message content
   const renderContent = () => {
     if (isEditing) {
       return (
@@ -80,56 +138,88 @@ const MessageContent: React.FC<MessageContentProps> = ({
         />
       );
     }
-    
-    // Handle multi-line content with different formats per line
-    const lines = message.content.split('\n').filter(line => line.trim() !== '');
-    
-    if (lines.length > 1) {
-      // Multi-line message - parse each line for its own format
-      return (
-        <div className="space-y-1">
-          {lines.map((line, index) => {
-            const { format, content } = parseLineFormat(line);
-            return renderFormattedLine(format, content, index);
-          })}
-        </div>
-      );
-    } else {
-      // Single line message - use the message's format
-      const baseClasses = "leading-snug";
-      const content = message.content;
-      
-      switch (message.format) {
-        case 'h1':
-          return <h1 className={`text-2xl font-bold ${baseClasses}`}>{content}</h1>;
-        case 'h2':
-          return <h2 className={`text-xl font-bold ${baseClasses}`}>{content}</h2>;
-        case 'h3':
-          return <h3 className={`text-lg font-bold ${baseClasses}`}>{content}</h3>;
-        case 'bold':
-          return <p className={`font-bold ${baseClasses}`}>{content}</p>;
-        case 'italic':
-          return <p className={`italic ${baseClasses}`}>{content}</p>;
-        case 'ul':
-          return (
-            <ul className="list-disc list-inside space-y-0">
-              {content.split('\n').map((item, idx) => (
-                <li key={idx} className={baseClasses}>{item}</li>
-              ))}
+
+    const lines = message.content.split('\n');
+
+    // Render as individual lines each with block style & inline md
+    let olCounter = 1;
+    let insideUl = false, insideOl = false;
+    let rendered: React.ReactNode[] = [];
+    let ulItems: React.ReactNode[] = [];
+    let olItems: React.ReactNode[] = [];
+
+    lines.forEach((line, index) => {
+      const { format, content, olIndex } = getLineBlockFormat(line);
+
+      if (format === 'ul') {
+        if (!insideUl) {
+          ulItems = [];
+          insideUl = true;
+        }
+        ulItems.push(
+          <li key={"ul-"+index} className="leading-snug pl-1">{parseInlineMarkdown(content)}</li>
+        );
+        if (index === lines.length - 1 || getLineBlockFormat(lines[index + 1]).format !== 'ul') {
+          rendered.push(
+            <ul key={"ul-group-"+index} className="list-disc list-inside space-y-0">
+              {ulItems}
             </ul>
           );
-        case 'ol':
-          return (
-            <ol className="list-decimal list-inside space-y-0">
-              {content.split('\n').map((item, idx) => (
-                <li key={idx} className={baseClasses}>{item}</li>
-              ))}
+          insideUl = false;
+          ulItems = [];
+        }
+      } else if (format === 'ol') {
+        if (!insideOl) {
+          olItems = [];
+          insideOl = true;
+          olCounter = olIndex ?? 1;
+        }
+        olItems.push(
+          <li key={"ol-"+index} className="leading-snug pl-1">{parseInlineMarkdown(content)}</li>
+        );
+        if (index === lines.length - 1 || getLineBlockFormat(lines[index + 1]).format !== 'ol') {
+          rendered.push(
+            <ol key={"ol-group-"+index} className="list-decimal list-inside space-y-0">
+              {olItems}
             </ol>
           );
-        default:
-          return <p className={baseClasses} style={{ whiteSpace: 'pre-line' }}>{content}</p>;
+          insideOl = false;
+          olItems = [];
+        }
+      } else {
+        // End any open list
+        insideUl = false;
+        insideOl = false;
+
+        switch (format) {
+          case 'h1':
+            rendered.push(
+              <h1 key={index} className="text-2xl font-bold leading-snug mb-2">{parseInlineMarkdown(content)}</h1>
+            );
+            break;
+          case 'h2':
+            rendered.push(
+              <h2 key={index} className="text-xl font-bold leading-snug mb-1.5">{parseInlineMarkdown(content)}</h2>
+            );
+            break;
+          case 'h3':
+            rendered.push(
+              <h3 key={index} className="text-lg font-bold leading-snug mb-1">{parseInlineMarkdown(content)}</h3>
+            );
+            break;
+          default:
+            rendered.push(
+              <p key={index} className="leading-snug">{parseInlineMarkdown(content)}</p>
+            );
+        }
       }
-    }
+    });
+
+    return (
+      <div className="space-y-1">
+        {rendered}
+      </div>
+    );
   };
 
   return (
