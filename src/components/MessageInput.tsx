@@ -26,7 +26,36 @@ const MessageInput: React.FC = () => {
   const handleSubmit = () => {
     if (!content.trim() && !image) return;
 
-    addMessage(content, format, image);
+    // Apply format prefix to content when sending
+    let formattedContent = content;
+    
+    switch (format) {
+      case 'h1':
+        formattedContent = `# ${content}`;
+        break;
+      case 'h2':
+        formattedContent = `## ${content}`;
+        break;
+      case 'h3':
+        formattedContent = `### ${content}`;
+        break;
+      case 'bold':
+        formattedContent = `**${content}**`;
+        break;
+      case 'italic':
+        formattedContent = `*${content}*`;
+        break;
+      case 'ul':
+        formattedContent = content.split('\n').map(line => line.trim() ? `- ${line}` : line).join('\n');
+        break;
+      case 'ol':
+        formattedContent = content.split('\n').map((line, index) => line.trim() ? `${index + 1}. ${line}` : line).join('\n');
+        break;
+      default:
+        formattedContent = content;
+    }
+
+    addMessage(formattedContent, 'plain', image); // Always send as 'plain' since formatting is now in content
     setContent('');
     setFormat('plain');
     setImage(undefined);
