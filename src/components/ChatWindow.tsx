@@ -19,16 +19,16 @@ const ChatWindow: React.FC = () => {
 
   if (!activeNoteId || !activeNote) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="neuro-base rounded-3xl p-12 max-w-md">
             <div className="neuro-inset rounded-2xl p-8 mb-6">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                <span className="text-2xl text-white font-bold">💭</span>
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-primary/40 rounded-2xl flex items-center justify-center mb-4">
+                <span className="text-2xl">💭</span>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-700 mb-3">Welcome to Notes</h2>
-            <p className="text-slate-500 leading-relaxed">
+            <h2 className="text-2xl font-bold text-foreground mb-3">Welcome to Notes</h2>
+            <p className="text-muted-foreground leading-relaxed">
               Select a note from the sidebar or create a new one to start your conversation with yourself.
             </p>
           </div>
@@ -38,11 +38,11 @@ const ChatWindow: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full">
+    <div className="flex-1 flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="neuro-base border-b border-slate-200/50 px-6 py-4">
-        <h2 className="text-xl font-bold text-slate-700">{activeNote.title}</h2>
-        <p className="text-sm text-slate-500">
+      <div className="neuro-base border-b border-border px-6 py-4">
+        <h2 className="text-xl font-bold text-foreground">{activeNote.title}</h2>
+        <p className="text-sm text-muted-foreground">
           {activeNote.messages.length} message{activeNote.messages.length !== 1 ? 's' : ''} • Last updated {activeNote.lastModified}
         </p>
       </div>
@@ -54,8 +54,8 @@ const ChatWindow: React.FC = () => {
             <div className="text-center py-12">
               <div className="neuro-inset rounded-2xl p-8 inline-block">
                 <span className="text-4xl mb-4 block">✨</span>
-                <p className="text-slate-500 text-lg font-medium">Start your conversation</p>
-                <p className="text-slate-400 text-sm mt-2">Type your first message below</p>
+                <p className="text-muted-foreground text-lg font-medium">Start your conversation</p>
+                <p className="text-muted-foreground text-sm mt-2">Type your first message below</p>
               </div>
             </div>
           ) : (
@@ -72,8 +72,8 @@ const ChatWindow: React.FC = () => {
         </div>
       </div>
 
-      {/* Input */}
-      <div className="neuro-base border-t border-slate-200/50">
+      {/* Input - Reduced size */}
+      <div className="neuro-base border-t border-border">
         <MessageInput />
       </div>
     </div>
