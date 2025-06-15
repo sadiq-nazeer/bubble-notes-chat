@@ -8,8 +8,8 @@ interface MessageTimestampProps {
 
 const MessageTimestamp: React.FC<MessageTimestampProps> = ({ message }) => {
   return (
-    <div className="w-12 flex-shrink-0 text-center pt-1 space-y-0">
-      <div className="text-[7px] text-muted-foreground/70 leading-none">
+    <div className="w-12 flex-shrink-0 text-center pt-0.5 space-y-0">
+      <div className="text-[8px] text-muted-foreground/70 leading-none">
         {new Date(message.timestamp).toLocaleTimeString('en-US', {
           hour: 'numeric',
           minute: '2-digit',
@@ -17,7 +17,7 @@ const MessageTimestamp: React.FC<MessageTimestampProps> = ({ message }) => {
         })}
       </div>
       {message.edited && (
-        <div className="inline-block bg-primary/10 text-primary px-0.5 py-0 rounded text-[6px] leading-none mt-0.5">
+        <div className="inline-block bg-primary/10 text-primary px-0.5 py-0 rounded text-[7px] leading-none mt-0">
           Edited
         </div>
       )}

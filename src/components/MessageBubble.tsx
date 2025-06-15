@@ -25,7 +25,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
   } = useMessageEdit(message);
 
   return (
-    <div className="flex justify-start group" ref={editContainerRef}>
+    <div className="flex justify-start group py-0.5" ref={editContainerRef}>
       <div className="flex items-start space-x-2 w-full max-w-3xl">
         <MessageTimestamp message={message} />
         
