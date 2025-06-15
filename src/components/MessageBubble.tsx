@@ -1,7 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNotesStore, Message } from '../store/notesStore';
-import { Edit, Trash2, Check, X } from 'lucide-react';
+import { Edit, Trash2, Check, X, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface MessageBubbleProps {
   message: Message;
@@ -36,6 +36,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
   const handleCancel = () => {
     setIsEditing(false);
     setEditContent(message.content);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content).then(() => {
+      toast.success("Message copied to clipboard!");
+    }).catch(err => {
+      toast.error("Failed to copy message.");
+      console.error("Failed to copy: ", err);
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -118,14 +127,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
           </div>
           
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-[11px] text-muted-foreground">
               {new Date(message.timestamp).toLocaleTimeString('en-US', { 
                 hour: 'numeric', 
                 minute: '2-digit',
                 hour12: true 
               })}
               {message.edited && (
-                <span className="ml-2 bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                <span className="ml-2 bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium text-[10px]">
                   Edited
                 </span>
               )}
@@ -151,6 +160,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
             </>
           ) : (
             <>
+              <button
+                onClick={handleCopy}
+                className="neuro-button rounded-lg p-2 text-blue-500 hover:text-blue-600 text-xs"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
               <button
                 onClick={handleEdit}
                 className="neuro-button rounded-lg p-2 text-primary hover:text-primary/80 text-xs"

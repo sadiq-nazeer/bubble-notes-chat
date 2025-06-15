@@ -1,8 +1,10 @@
 
 import React, { useEffect, useRef } from 'react';
-import { useNotesStore } from '../store/notesStore';
+import { useNotesStore, Message } from '../store/notesStore';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import { Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ChatWindow: React.FC = () => {
   const { getActiveNote, activeNoteId } = useNotesStore();
@@ -16,6 +18,38 @@ const ChatWindow: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [activeNote?.messages]);
+
+  const handleCopyConversation = () => {
+    if (!activeNote) return;
+
+    const formatMessageForCopy = (msg: Message): string => {
+      let content = msg.content;
+      if (msg.image) {
+        content = `[Image Attached] ${content}`;
+      }
+      switch (msg.format) {
+        case 'h1': return `# ${content}`;
+        case 'h2': return `## ${content}`;
+        case 'h3': return `### ${content}`;
+        case 'bold': return `**${content}**`;
+        case 'italic': return `*${content}*`;
+        case 'ul': return content.split('\n').map(item => `- ${item}`).join('\n');
+        case 'ol': return content.split('\n').map((item, index) => `${index + 1}. ${item}`).join('\n');
+        default: return content;
+      }
+    };
+
+    const fullConversation = activeNote.messages
+      .map(formatMessageForCopy)
+      .join('\n\n');
+
+    navigator.clipboard.writeText(fullConversation)
+      .then(() => toast.success("Conversation copied!"))
+      .catch(err => {
+        toast.error("Could not copy conversation.");
+        console.error('Copy failed:', err);
+      });
+  };
 
   if (!activeNoteId || !activeNote) {
     return (
@@ -40,11 +74,20 @@ const ChatWindow: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="neuro-base border-b border-border px-6 py-4">
-        <h2 className="text-xl font-bold text-foreground">{activeNote.title}</h2>
-        <p className="text-sm text-muted-foreground">
-          {activeNote.messages.length} message{activeNote.messages.length !== 1 ? 's' : ''} • Last updated {activeNote.lastModified}
-        </p>
+      <div className="neuro-base border-b border-border px-6 py-4 flex justify-between items-start">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">{activeNote.title}</h2>
+          <p className="text-sm text-muted-foreground">
+            {activeNote.messages.length} message{activeNote.messages.length !== 1 ? 's' : ''} • Last updated {activeNote.lastModified}
+          </p>
+        </div>
+        <button 
+          onClick={handleCopyConversation}
+          className="neuro-button rounded-lg p-2 text-primary hover:text-primary/80"
+          aria-label="Copy full conversation"
+        >
+          <Copy className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Messages */}
