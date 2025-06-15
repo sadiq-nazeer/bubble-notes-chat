@@ -1,20 +1,19 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced Neumorphism Design System matching the reference image */
+/* Enhanced Neumorphism Design System with proper visible colors */
 @layer base {
   :root {
-    /* Light mode - matching the reference image style */
-    --neuro-bg: 238 242 255;
-    --neuro-surface: 245 248 255;
+    /* Light mode - soft, subtle colors for proper neumorphism */
+    --neuro-bg: 225 235 245;
+    --neuro-surface: 230 240 250;
     --neuro-shadow-light: 255 255 255;
-    --neuro-shadow-dark: 209 213 230;
-    --neuro-text: 75 85 115;
-    --neuro-text-light: 135 145 175;
-    --neuro-accent: 139 92 246;
-    --neuro-accent-light: 196 181 253;
+    --neuro-shadow-dark: 190 200 220;
+    --neuro-text: 55 65 81;
+    --neuro-text-light: 107 114 128;
+    --neuro-accent: 99 102 241;
+    --neuro-accent-light: 165 180 252;
     --neuro-success: 34 197 94;
     --neuro-warning: 251 146 60;
     
@@ -35,22 +34,22 @@
     --accent-foreground: var(--neuro-text);
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
-    --border: 220 224 240;
+    --border: 203 213 225;
     --input: var(--neuro-surface);
     --ring: var(--neuro-accent);
     --radius: 1rem;
   }
 
   .dark {
-    /* Enhanced dark mode */
-    --neuro-bg: 30 35 50;
-    --neuro-surface: 40 45 60;
-    --neuro-shadow-light: 50 55 70;
-    --neuro-shadow-dark: 20 25 40;
-    --neuro-text: 230 240 255;
-    --neuro-text-light: 170 180 200;
-    --neuro-accent: 147 51 234;
-    --neuro-accent-light: 168 85 247;
+    /* Dark mode - proper dark colors with good contrast */
+    --neuro-bg: 15 23 42;
+    --neuro-surface: 30 41 59;
+    --neuro-shadow-light: 51 65 85;
+    --neuro-shadow-dark: 2 6 23;
+    --neuro-text: 248 250 252;
+    --neuro-text-light: 148 163 184;
+    --neuro-accent: 99 102 241;
+    --neuro-accent-light: 129 140 248;
     --neuro-success: 34 197 94;
     --neuro-warning: 251 146 60;
     
@@ -70,7 +69,7 @@
     --accent-foreground: var(--neuro-text);
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
-    --border: 60 65 80;
+    --border: 51 65 85;
     --input: var(--neuro-surface);
     --ring: var(--neuro-accent);
   }
