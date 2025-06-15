@@ -7,16 +7,16 @@
 @layer base {
   :root {
     /* Light mode - white background with light purple accents matching reference */
-    --neuro-bg: 255 255 255;
-    --neuro-surface: 250 250 255;
-    --neuro-shadow-light: 255 255 255;
-    --neuro-shadow-dark: 220 220 235;
-    --neuro-text: 50 50 70;
-    --neuro-text-light: 120 120 140;
-    --neuro-accent: 139 92 246;
-    --neuro-accent-light: 196 181 253;
-    --neuro-success: 34 197 94;
-    --neuro-warning: 251 146 60;
+    --neuro-bg: 0 0% 100%;
+    --neuro-surface: 240 100% 99%;
+    --neuro-shadow-light: 0 0% 100%;
+    --neuro-shadow-dark: 240 25.9% 89.2%;
+    --neuro-text: 240 16.7% 23.5%;
+    --neuro-text-light: 240 8.3% 51%;
+    --neuro-accent: 261.6 91.6% 66.3%;
+    --neuro-accent-light: 251.2 95.8% 85.1%;
+    --neuro-success: 144.8 71.1% 45.3%;
+    --neuro-warning: 33.5 95.3% 61%;
     
     /* Original shadcn variables for compatibility */
     --background: var(--neuro-bg);
@@ -26,16 +26,16 @@
     --popover: var(--neuro-surface);
     --popover-foreground: var(--neuro-text);
     --primary: var(--neuro-accent);
-    --primary-foreground: 255 255 255;
+    --primary-foreground: 0 0% 100%;
     --secondary: var(--neuro-surface);
     --secondary-foreground: var(--neuro-text);
     --muted: var(--neuro-surface);
     --muted-foreground: var(--neuro-text-light);
     --accent: var(--neuro-surface);
     --accent-foreground: var(--neuro-text);
-    --destructive: 239 68 68;
-    --destructive-foreground: 255 255 255;
-    --border: 230 230 245;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 33.3% 93.1%;
     --input: var(--neuro-surface);
     --ring: var(--neuro-accent);
     --radius: 1rem;
@@ -43,16 +43,16 @@
 
   .dark {
     /* Dark mode - proper dark colors with good contrast */
-    --neuro-bg: 15 23 42;
-    --neuro-surface: 30 41 59;
-    --neuro-shadow-light: 51 65 85;
-    --neuro-shadow-dark: 2 6 23;
-    --neuro-text: 248 250 252;
-    --neuro-text-light: 148 163 184;
-    --neuro-accent: 147 51 234;
-    --neuro-accent-light: 168 85 247;
-    --neuro-success: 34 197 94;
-    --neuro-warning: 251 146 60;
+    --neuro-bg: 222.2 47.4% 11.2%;
+    --neuro-surface: 221.2 33.3% 17.5%;
+    --neuro-shadow-light: 220 24.7% 26.7%;
+    --neuro-shadow-dark: 228.6 82.6% 4.9%;
+    --neuro-text: 210 50% 98%;
+    --neuro-text-light: 214.8 25.4% 65.1%;
+    --neuro-accent: 272.6 79.8% 55.9%;
+    --neuro-accent-light: 266.3 92.6% 65.1%;
+    --neuro-success: 144.8 71.1% 45.3%;
+    --neuro-warning: 33.5 95.3% 61%;
     
     --background: var(--neuro-bg);
     --foreground: var(--neuro-text);
@@ -61,16 +61,16 @@
     --popover: var(--neuro-surface);
     --popover-foreground: var(--neuro-text);
     --primary: var(--neuro-accent);
-    --primary-foreground: 255 255 255;
+    --primary-foreground: 0 0% 100%;
     --secondary: var(--neuro-surface);
     --secondary-foreground: var(--neuro-text);
     --muted: var(--neuro-surface);
     --muted-foreground: var(--neuro-text-light);
     --accent: var(--neuro-surface);
     --accent-foreground: var(--neuro-text);
-    --destructive: 239 68 68;
-    --destructive-foreground: 255 255 255;
-    --border: 51 65 85;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 24.7% 26.7%;
     --input: var(--neuro-surface);
     --ring: var(--neuro-accent);
   }
