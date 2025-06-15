@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNotesStore, Message } from '../store/notesStore';
 import { Edit, Trash2, Check, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -26,17 +27,33 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
     setEditContent(message.content);
   };
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (editContent.trim()) {
       editMessage(message.id, editContent.trim(), message.format, message.image);
     }
     setIsEditing(false);
-  };
-
-  const handleCancel = () => {
+  }, [editContent, message.id, message.format, message.image, editMessage]);
+  
+  const handleCancel = useCallback(() => {
     setIsEditing(false);
     setEditContent(message.content);
-  };
+  }, [message.content]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editContainerRef.current && !editContainerRef.current.contains(event.target as Node)) {
+        handleSave();
+      }
+    };
+
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEditing, handleSave]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content).then(() => {
@@ -47,14 +64,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
     });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
     } else if (e.key === 'Escape') {
       handleCancel();
     }
-  };
+  }, [handleSave, handleCancel]);
 
   const renderContent = () => {
     const baseClasses = "leading-relaxed";
@@ -105,10 +122,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
   };
 
   return (
-    <div className="flex justify-start group">
-      <div className="flex items-start space-x-3 max-w-2xl">
-        <div 
-          className="message-bubble animate-scale-in cursor-pointer"
+    <div className="flex justify-start group" ref={editContainerRef}>
+      <div className="flex items-start space-x-2 w-full max-w-3xl">
+        <div className="w-16 flex-shrink-0 text-center text-[10px] text-muted-foreground/80 pt-2.5 space-y-1">
+          <span>
+            {new Date(message.timestamp).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })}
+          </span>
+          {message.edited && (
+            <span className="inline-block bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium text-[9px]">
+              Edited
+            </span>
+          )}
+        </div>
+
+        <div
+          className="message-bubble animate-scale-in cursor-pointer flex-1"
           onClick={!isEditing ? handleEdit : undefined}
         >
           {message.image && (
@@ -125,58 +157,48 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
           <div className="text-foreground">
             {renderContent()}
           </div>
-          
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-            <div className="text-[11px] text-muted-foreground">
-              {new Date(message.timestamp).toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-              })}
-              {message.edited && (
-                <span className="ml-2 bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium text-[10px]">
-                  Edited
-                </span>
-              )}
-            </div>
-          </div>
         </div>
         
-        <div className="flex-shrink-0 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+        <div className="flex-shrink-0 flex flex-col items-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
           {isEditing ? (
             <>
               <button
                 onClick={handleSave}
-                className="neuro-button rounded-lg p-2 text-green-500 hover:text-green-600 text-xs"
+                className="neuro-button rounded-lg p-2 text-green-500 hover:text-green-600"
+                aria-label="Save changes"
               >
-                <Check className="h-3 w-3" />
+                <Check className="h-4 w-4" />
               </button>
               <button
                 onClick={handleCancel}
-                className="neuro-button rounded-lg p-2 text-gray-500 hover:text-gray-600 text-xs"
+                className="neuro-button rounded-lg p-2 text-gray-500 hover:text-gray-600"
+                aria-label="Cancel edit"
               >
-                <X className="h-3 w-3" />
+                <X className="h-4 w-4" />
               </button>
             </>
           ) : (
             <>
               <button
                 onClick={handleCopy}
-                className="neuro-button rounded-lg p-2 text-blue-500 hover:text-blue-600 text-xs"
+                className="neuro-button rounded-lg p-2 text-blue-500 hover:text-blue-600"
+                aria-label="Copy message"
               >
-                <Copy className="h-3 w-3" />
+                <Copy className="h-4 w-4" />
               </button>
               <button
                 onClick={handleEdit}
-                className="neuro-button rounded-lg p-2 text-primary hover:text-primary/80 text-xs"
+                className="neuro-button rounded-lg p-2 text-primary hover:text-primary/80"
+                aria-label="Edit message"
               >
-                <Edit className="h-3 w-3" />
+                <Edit className="h-4 w-4" />
               </button>
               <button
                 onClick={() => deleteMessage(message.id)}
-                className="neuro-button rounded-lg p-2 text-red-400 hover:text-red-600 text-xs"
+                className="neuro-button rounded-lg p-2 text-red-400 hover:text-red-600"
+                aria-label="Delete message"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-4 w-4" />
               </button>
             </>
           )}

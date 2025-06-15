@@ -50,7 +50,7 @@ const Sidebar: React.FC = () => {
                         : 'Empty note'
                       }
                     </p>
-                    <p className="text-[11px] text-muted-foreground mt-2">
+                    <p className="text-[10px] text-muted-foreground/80 mt-1">
                       {note.lastModified}
                     </p>
                   </div>
