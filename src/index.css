@@ -1,19 +1,20 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced Neumorphism Design System with proper visible colors */
+/* Enhanced Neumorphism Design System matching the reference image */
 @layer base {
   :root {
-    /* Light mode - soft, subtle colors for proper neumorphism */
-    --neuro-bg: 225 235 245;
-    --neuro-surface: 230 240 250;
+    /* Light mode - white background with light purple accents matching reference */
+    --neuro-bg: 255 255 255;
+    --neuro-surface: 250 250 255;
     --neuro-shadow-light: 255 255 255;
-    --neuro-shadow-dark: 190 200 220;
-    --neuro-text: 55 65 81;
-    --neuro-text-light: 107 114 128;
-    --neuro-accent: 99 102 241;
-    --neuro-accent-light: 165 180 252;
+    --neuro-shadow-dark: 220 220 235;
+    --neuro-text: 50 50 70;
+    --neuro-text-light: 120 120 140;
+    --neuro-accent: 139 92 246;
+    --neuro-accent-light: 196 181 253;
     --neuro-success: 34 197 94;
     --neuro-warning: 251 146 60;
     
@@ -34,7 +35,7 @@
     --accent-foreground: var(--neuro-text);
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
-    --border: 203 213 225;
+    --border: 230 230 245;
     --input: var(--neuro-surface);
     --ring: var(--neuro-accent);
     --radius: 1rem;
@@ -48,8 +49,8 @@
     --neuro-shadow-dark: 2 6 23;
     --neuro-text: 248 250 252;
     --neuro-text-light: 148 163 184;
-    --neuro-accent: 99 102 241;
-    --neuro-accent-light: 129 140 248;
+    --neuro-accent: 147 51 234;
+    --neuro-accent-light: 168 85 247;
     --neuro-success: 34 197 94;
     --neuro-warning: 251 146 60;
     
@@ -91,15 +92,15 @@
   .neuro-base {
     background: hsl(var(--neuro-surface));
     box-shadow: 
-      8px 8px 16px hsl(var(--neuro-shadow-dark) / 0.3),
-      -8px -8px 16px hsl(var(--neuro-shadow-light) / 0.9);
+      8px 8px 16px hsl(var(--neuro-shadow-dark) / 0.15),
+      -8px -8px 16px hsl(var(--neuro-shadow-light) / 0.8);
     border: 1px solid hsl(var(--neuro-shadow-light) / 0.2);
   }
   
   .neuro-inset {
     background: hsl(var(--neuro-surface));
     box-shadow: 
-      inset 4px 4px 8px hsl(var(--neuro-shadow-dark) / 0.3),
+      inset 4px 4px 8px hsl(var(--neuro-shadow-dark) / 0.15),
       inset -4px -4px 8px hsl(var(--neuro-shadow-light) / 0.8);
     border: 1px solid hsl(var(--neuro-shadow-dark) / 0.1);
   }
@@ -107,7 +108,7 @@
   .neuro-pressed {
     background: hsl(var(--neuro-surface));
     box-shadow: 
-      inset 6px 6px 12px hsl(var(--neuro-shadow-dark) / 0.4),
+      inset 6px 6px 12px hsl(var(--neuro-shadow-dark) / 0.2),
       inset -6px -6px 12px hsl(var(--neuro-shadow-light) / 0.9);
     border: 1px solid hsl(var(--neuro-shadow-dark) / 0.15);
   }
@@ -115,7 +116,7 @@
   .neuro-subtle {
     background: hsl(var(--neuro-surface));
     box-shadow: 
-      4px 4px 8px hsl(var(--neuro-shadow-dark) / 0.2),
+      4px 4px 8px hsl(var(--neuro-shadow-dark) / 0.1),
       -4px -4px 8px hsl(var(--neuro-shadow-light) / 0.8);
     border: 1px solid hsl(var(--neuro-shadow-light) / 0.15);
   }
@@ -127,8 +128,8 @@
   
   .neuro-button:hover {
     box-shadow: 
-      6px 6px 12px hsl(var(--neuro-shadow-dark) / 0.35),
-      -6px -6px 12px hsl(var(--neuro-shadow-light) / 0.95);
+      6px 6px 12px hsl(var(--neuro-shadow-dark) / 0.2),
+      -6px -6px 12px hsl(var(--neuro-shadow-light) / 0.9);
     transform: translateY(-1px);
     border: 1px solid hsl(var(--neuro-accent) / 0.2);
   }
@@ -147,7 +148,7 @@
   .message-bubble:hover {
     @apply neuro-base;
     box-shadow: 
-      6px 6px 12px hsl(var(--neuro-shadow-dark) / 0.25),
+      6px 6px 12px hsl(var(--neuro-shadow-dark) / 0.15),
       -6px -6px 12px hsl(var(--neuro-shadow-light) / 0.85);
   }
   
@@ -187,7 +188,7 @@
   
   .neuro-input:focus {
     box-shadow: 
-      inset 3px 3px 6px hsl(var(--neuro-shadow-dark) / 0.25),
+      inset 3px 3px 6px hsl(var(--neuro-shadow-dark) / 0.1),
       inset -3px -3px 6px hsl(var(--neuro-shadow-light) / 0.9),
       0 0 0 2px hsl(var(--neuro-accent) / 0.3);
     border: 1px solid hsl(var(--neuro-accent) / 0.4);
