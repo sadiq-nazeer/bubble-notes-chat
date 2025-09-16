@@ -10,10 +10,11 @@
     --neuro-surface: 240 100% 98%;
     --neuro-shadow-light: 0 0% 100%;
     --neuro-shadow-dark: 240 15% 75%;
-    --neuro-text: 240 16.7% 23.5%;
-    --neuro-text-light: 240 8.3% 51%;
-    --neuro-accent: 261.6 91.6% 66.3%;
-    --neuro-accent-light: 251.2 95.8% 85.1%;
+    --neuro-text: 0 0% 10%;
+    --neuro-text-light: 0 0% 35%;
+    /* Darker golden accent for light mode */
+    --neuro-accent: 45 85% 40%;
+    --neuro-accent-light: 45 90% 55%;
     --neuro-success: 144.8 71.1% 45.3%;
     --neuro-warning: 33.5 95.3% 61%;
     
@@ -48,8 +49,8 @@
     --neuro-shadow-dark: 228.6 82.6% 2%;
     --neuro-text: 210 50% 98%;
     --neuro-text-light: 214.8 25.4% 65.1%;
-    --neuro-accent: 272.6 79.8% 55.9%;
-    --neuro-accent-light: 266.3 92.6% 65.1%;
+    --neuro-accent: 45 90% 60%;
+    --neuro-accent-light: 45 95% 70%;
     --neuro-success: 144.8 71.1% 45.3%;
     --neuro-warning: 33.5 95.3% 61%;
     
