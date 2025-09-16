@@ -1,7 +1,7 @@
 
-import React, { useState, useRef } from 'react';
+import { ChevronDown, Send } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import { useNotesStore } from '../store/notesStore';
-import { Image as ImageIcon } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
 const MessageInput: React.FC = () => {
@@ -9,6 +9,7 @@ const MessageInput: React.FC = () => {
   const [content, setContent] = useState('');
   const [image, setImage] = useState<string | undefined>();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isOpen, setIsOpen] = useState(true);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,28 +35,28 @@ const MessageInput: React.FC = () => {
   };
 
   return (
-    <div className="p-4 space-y-3">
-      {/* Image Upload Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="neuro-button rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-primary font-medium transition-all"
-        >
-          <div className="flex items-center space-x-2">
-            <ImageIcon className="h-4 w-4" />
-            <span>Add Image</span>
-          </div>
-        </button>
-      </div>
-
+    <div className="p-3 space-y-2">
+      {/* Top toggle when collapsed */}
+      {!isOpen && (
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => setIsOpen(prev => !prev)}
+            className="neuro-button rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary transition-all flex items-center gap-1"
+            aria-label="Show message input"
+          >
+            <span>Show input</span>
+            <ChevronDown className="h-3 w-3 -rotate-90" />
+          </button>
+        </div>
+      )}
       {/* Image Preview */}
-      {image && (
+      {isOpen && image && (
         <div className="neuro-inset rounded-xl p-3">
           <div className="flex items-start space-x-3">
             <img
               src={image}
               alt="Preview"
-              className="w-20 h-20 object-cover rounded-lg neuro-subtle p-1"
+              className="w-16 h-16 object-cover rounded-lg neuro-subtle p-1"
             />
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground mb-2">Image attached</p>
@@ -70,31 +71,51 @@ const MessageInput: React.FC = () => {
         </div>
       )}
 
-      {/* Rich Text Editor */}
-      <RichTextEditor
-        onContentChange={setContent}
-        onSubmit={handleSubmit}
-        placeholder="Type your message... Use different formats for each line"
-      />
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between">
-        <div className="text-[10px] text-muted-foreground/70 leading-none">
-          Rich text formatting enabled
+      {/* Rich Text Editor with inline controls */}
+      {isOpen && (
+        <div className="relative">
+          <RichTextEditor
+            onContentChange={setContent}
+            onSubmit={handleSubmit}
+            placeholder="Type your message..."
+            showImageButton={true}
+            onImageClick={() => fileInputRef.current?.click()}
+            rightActions={(
+              <button
+                onClick={() => setIsOpen(false)}
+                className="neuro-button rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:text-primary transition-all flex items-center gap-1"
+                aria-label="Hide message input"
+              >
+                <span>Hide</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            )}
+          />
+          
+          {/* Send button positioned next to input */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-2 z-40">
+            <button
+              onClick={handleSubmit}
+              disabled={!content.trim() && !image}
+              className={`neuro-button rounded-lg p-2 transition-all ${
+                content.trim() || image
+                  ? 'text-primary hover:text-primary/80 ring-1 ring-primary/20 hover:ring-primary/30'
+                  : 'text-muted-foreground cursor-not-allowed opacity-50'
+              }`}
+              aria-label="Send message"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-        
-        <button
-          onClick={handleSubmit}
-          disabled={!content.trim() && !image}
-          className={`neuro-button rounded-lg px-6 py-2 text-sm font-semibold transition-all ${
-            content.trim() || image
-              ? 'text-primary hover:text-primary/80 ring-1 ring-primary/20 hover:ring-primary/30'
-              : 'text-muted-foreground cursor-not-allowed opacity-50'
-          }`}
-        >
-          Send
-        </button>
-      </div>
+      )}
+
+      {/* Compact help text */}
+      {isOpen && (
+        <div className="text-xs text-muted-foreground/60 px-1">
+          Enter to send • Shift+Enter for new line
+        </div>
+      )}
 
       <input
         ref={fileInputRef}

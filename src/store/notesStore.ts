@@ -27,6 +27,7 @@ interface NotesState {
   createNote: () => void;
   deleteNote: (id: string) => void;
   setActiveNote: (id: string) => void;
+  updateNoteTitle: (id: string, title: string) => void;
   
   addMessage: (content: string, format: Message['format'], image?: string) => void;
   editMessage: (messageId: string, content: string, format: Message['format'], image?: string) => void;
@@ -80,6 +81,20 @@ export const useNotesStore = create<NotesState>()(
 
       setActiveNote: (id: string) => {
         set({ activeNoteId: id });
+      },
+
+      updateNoteTitle: (id: string, title: string) => {
+        set(state => ({
+          notes: state.notes.map(note => 
+            note.id === id
+              ? {
+                  ...note,
+                  title: title.trim() || `Note ${state.notes.findIndex(n => n.id === id) + 1}`,
+                  lastModified: formatTimestamp(new Date())
+                }
+              : note
+          )
+        }));
       },
 
       addMessage: (content: string, format: Message['format'], image?: string) => {

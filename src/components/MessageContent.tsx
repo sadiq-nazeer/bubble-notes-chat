@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Message } from '../store/notesStore';
+import MessageActions from './MessageActions';
 
 interface MessageContentProps {
   message: Message;
@@ -10,6 +11,8 @@ interface MessageContentProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   handleEdit: () => void;
+  handleSave: () => void;
+  handleCancel: () => void;
 }
 
 type BlockFormat = 'plain' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol';
@@ -121,7 +124,9 @@ const MessageContent: React.FC<MessageContentProps> = ({
   setEditContent,
   textareaRef,
   handleKeyDown,
-  handleEdit
+  handleEdit,
+  handleSave,
+  handleCancel
 }) => {
 
   const renderContent = () => {
@@ -132,7 +137,8 @@ const MessageContent: React.FC<MessageContentProps> = ({
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-transparent border-none outline-none text-foreground placeholder-muted-foreground resize-none leading-snug"
+          onBlur={handleSave}
+          className="w-full bg-transparent border border-border rounded-lg p-2 outline-none text-foreground placeholder-muted-foreground resize-none leading-snug focus:ring-2 focus:ring-primary/50 focus:border-primary"
           rows={Math.max(2, editContent.split('\n').length)}
           placeholder="Type your message... Use # for headings, **bold**, *italic*, `code`"
         />
@@ -246,7 +252,11 @@ const MessageContent: React.FC<MessageContentProps> = ({
 
   return (
     <div
-      className="message-bubble animate-scale-in cursor-pointer flex-1 py-2 px-3"
+      className={`message-bubble animate-scale-in relative flex-1 min-w-0 py-2 px-3 rounded-lg transition-all ${
+        isEditing 
+          ? 'bg-background border border-border' 
+          : 'cursor-pointer hover:bg-muted/20'
+      }`}
       onClick={!isEditing ? handleEdit : undefined}
     >
       {message.image && (
@@ -260,8 +270,14 @@ const MessageContent: React.FC<MessageContentProps> = ({
         </div>
       )}
       
-      <div className="text-foreground">
-        {renderContent()}
+      <div className="text-foreground w-full ">{renderContent()}</div>
+
+      <div
+        className="absolute -top-3 -right-3"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <MessageActions message={message} />
       </div>
     </div>
   );

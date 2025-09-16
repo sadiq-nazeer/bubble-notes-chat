@@ -1,10 +1,11 @@
 
+import { Copy } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
-import { useNotesStore, Message } from '../store/notesStore';
+import { toast } from 'sonner';
+import { Message, useNotesStore } from '../store/notesStore';
+import EditableTitle from './EditableTitle';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
-import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
 
 const ChatWindow: React.FC = () => {
   const { getActiveNote, activeNoteId } = useNotesStore();
@@ -74,9 +75,12 @@ const ChatWindow: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="neuro-base border-b border-border px-6 py-4 flex justify-between items-start">
+      <div className="neuro-base border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-start">
         <div>
-          <h2 className="text-xl font-bold text-foreground">{activeNote.title}</h2>
+          <EditableTitle 
+            noteId={activeNote.id}
+            title={activeNote.title}
+          />
           <p className="text-sm text-muted-foreground">
             {activeNote.messages.length} message{activeNote.messages.length !== 1 ? 's' : ''} • Last updated {activeNote.lastModified}
           </p>
@@ -91,7 +95,7 @@ const ChatWindow: React.FC = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-3 sm:px-6 py-3 sm:py-4">
         <div className="space-y-1">
           {activeNote.messages.length === 0 ? (
             <div className="text-center py-12">

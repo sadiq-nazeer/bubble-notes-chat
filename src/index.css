@@ -84,53 +84,52 @@
     @apply bg-background text-foreground font-medium transition-colors duration-300;
     background: linear-gradient(135deg, hsl(var(--neuro-bg)) 0%, hsl(var(--neuro-surface)) 100%);
     min-height: 100vh;
+    overflow-x: hidden;
   }
 }
 
 @layer components {
+  /* Uniform, symmetric shadow for list items to avoid directional bias */
+  .shadow-uniform {
+    box-shadow: 0 8px 20px hsl(var(--neuro-shadow-dark) / 0.25);
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Active note emphasis with subtle ring and improved border */
+  .active-note {
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.35), 0 10px 24px hsl(var(--neuro-shadow-dark) / 0.28);
+    border: 1px solid hsl(var(--ring) / 0.5);
+  }
   /* DRAMATIC Neumorphism base styles with maximum depth and visibility */
   .neuro-base {
-    background: linear-gradient(145deg, hsl(var(--neuro-surface)) 0%, hsl(var(--neuro-shadow-light) / 0.3) 100%);
-    box-shadow: 
-      15px 15px 30px hsl(var(--neuro-shadow-dark) / 0.5), /* Much deeper dark shadow */
-      -15px -15px 30px hsl(var(--neuro-shadow-light) / 1), /* Bright highlight */
-      inset 1px 1px 2px hsl(var(--neuro-shadow-light) / 0.8), /* Inner highlight */
-      inset -1px -1px 2px hsl(var(--neuro-shadow-dark) / 0.2); /* Inner shadow */
-    border: 1px solid hsl(var(--neuro-shadow-light) / 0.4);
-    backdrop-filter: blur(1px);
+    background: hsl(var(--neuro-surface));
+    box-shadow: 0 8px 20px hsl(var(--neuro-shadow-dark) / 0.25);
+    border: 1px solid hsl(var(--border));
   }
   
   .neuro-inset {
-    background: linear-gradient(145deg, hsl(var(--neuro-shadow-dark) / 0.1) 0%, hsl(var(--neuro-surface)) 100%);
-    box-shadow: 
-      inset 12px 12px 24px hsl(var(--neuro-shadow-dark) / 0.4), /* Deep inset dark */
-      inset -12px -12px 24px hsl(var(--neuro-shadow-light) / 1), /* Bright inset highlight */
-      2px 2px 4px hsl(var(--neuro-shadow-dark) / 0.2); /* Subtle outer shadow */
-    border: 1px solid hsl(var(--neuro-shadow-dark) / 0.15);
+    background: hsl(var(--neuro-surface));
+    box-shadow: inset 0 1px 2px hsl(var(--neuro-shadow-dark) / 0.2);
+    border: 1px solid hsl(var(--border));
   }
   
   .neuro-pressed {
-    background: linear-gradient(145deg, hsl(var(--neuro-shadow-dark) / 0.2) 0%, hsl(var(--neuro-surface)) 100%);
-    box-shadow: 
-      inset 15px 15px 30px hsl(var(--neuro-shadow-dark) / 0.5), /* Very deep pressed effect */
-      inset -15px -15px 30px hsl(var(--neuro-shadow-light) / 1),
-      0 0 0 1px hsl(var(--neuro-shadow-dark) / 0.1);
-    border: 1px solid hsl(var(--neuro-shadow-dark) / 0.2);
-    transform: scale(0.98);
+    background: hsl(var(--neuro-surface));
+    box-shadow: inset 0 2px 6px hsl(var(--neuro-shadow-dark) / 0.35);
+    border: 1px solid hsl(var(--border));
   }
   
   .neuro-subtle {
-    background: linear-gradient(145deg, hsl(var(--neuro-surface)) 0%, hsl(var(--neuro-shadow-light) / 0.2) 100%);
-    box-shadow: 
-      8px 8px 16px hsl(var(--neuro-shadow-dark) / 0.3), /* Stronger subtle shadow */
-      -8px -8px 16px hsl(var(--neuro-shadow-light) / 0.9),
-      inset 0.5px 0.5px 1px hsl(var(--neuro-shadow-light) / 0.6);
-    border: 1px solid hsl(var(--neuro-shadow-light) / 0.3);
+    background: hsl(var(--neuro-surface));
+    box-shadow: 0 6px 16px hsl(var(--neuro-shadow-dark) / 0.2);
+    border: 1px solid hsl(var(--border));
   }
   
   .neuro-button {
-    @apply neuro-base transition-all duration-300 ease-in-out;
-    background: linear-gradient(145deg, hsl(var(--neuro-surface)) 0%, hsl(var(--neuro-shadow-light) / 0.2) 100%);
+    @apply transition-all duration-300 ease-in-out;
+    background: hsl(var(--neuro-surface));
+    box-shadow: 0 6px 16px hsl(var(--neuro-shadow-dark) / 0.22);
+    border: 1px solid hsl(var(--border));
     position: relative;
     overflow: hidden;
   }
@@ -146,24 +145,21 @@
   }
   
   .neuro-button:hover {
-    box-shadow: 
-      12px 12px 24px hsl(var(--neuro-shadow-dark) / 0.4),
-      -12px -12px 24px hsl(var(--neuro-shadow-light) / 1),
-      inset 1px 1px 2px hsl(var(--neuro-shadow-light) / 0.9),
-      0 0 0 1px hsl(var(--neuro-accent) / 0.2);
-    transform: translateY(-3px) scale(1.02);
-    border: 1px solid hsl(var(--neuro-accent) / 0.3);
+    box-shadow: 0 10px 24px hsl(var(--neuro-shadow-dark) / 0.28), 0 0 0 1px hsl(var(--neuro-accent) / 0.25);
+    transform: translateY(-2px);
+    border-color: hsl(var(--neuro-accent) / 0.35);
   }
   
   .neuro-button:active {
-    @apply neuro-pressed;
-    transform: translateY(0px) scale(0.98);
+    box-shadow: inset 0 2px 6px hsl(var(--neuro-shadow-dark) / 0.35);
+    transform: translateY(0px) scale(0.99);
   }
   
   /* Enhanced Chat message styles with dramatic depth */
   .message-bubble {
-    @apply neuro-subtle rounded-2xl px-4 py-3 max-w-md;
-    background: linear-gradient(135deg, hsl(var(--neuro-surface)) 0%, hsl(var(--neuro-shadow-light) / 0.1) 100%);
+    @apply rounded-2xl px-4 py-3 w-full;
+    background: hsl(var(--neuro-surface));
+    box-shadow: 0 6px 16px hsl(var(--neuro-shadow-dark) / 0.2);
     position: relative;
   }
   
@@ -179,12 +175,9 @@
   }
   
   .message-bubble:hover {
-    box-shadow: 
-      12px 12px 24px hsl(var(--neuro-shadow-dark) / 0.35),
-      -12px -12px 24px hsl(var(--neuro-shadow-light) / 1),
-      inset 1px 1px 2px hsl(var(--neuro-shadow-light) / 0.7);
-    transform: translateY(-2px) scale(1.01);
-    border: 1px solid hsl(var(--neuro-shadow-light) / 0.4);
+    box-shadow: 0 10px 24px hsl(var(--neuro-shadow-dark) / 0.28);
+    transform: translateY(-1px);
+    border: 1px solid hsl(var(--border));
   }
   
   /* Enhanced scrollbar styling with neumorphism */
@@ -321,30 +314,15 @@
   background: linear-gradient(135deg, hsl(var(--neuro-bg)) 0%, hsl(var(--neuro-surface)) 100%);
 }
 
-.dark .neuro-base {
-  box-shadow: 
-    12px 12px 24px hsl(var(--neuro-shadow-dark) / 0.8), /* Much stronger dark mode shadow */
-    -12px -12px 24px hsl(var(--neuro-shadow-light) / 0.15), /* More visible light highlight */
-    inset 1px 1px 2px hsl(var(--neuro-shadow-light) / 0.1);
-}
+.dark .neuro-base { box-shadow: 0 10px 24px hsl(var(--neuro-shadow-dark) / 0.5); }
 
-.dark .neuro-subtle {
-  box-shadow: 
-    8px 8px 16px hsl(var(--neuro-shadow-dark) / 0.7),
-    -8px -8px 16px hsl(var(--neuro-shadow-light) / 0.12),
-    inset 0.5px 0.5px 1px hsl(var(--neuro-shadow-light) / 0.05);
-}
+.dark .neuro-subtle { box-shadow: 0 8px 20px hsl(var(--neuro-shadow-dark) / 0.45); }
 
-.dark .neuro-inset {
-  box-shadow: 
-    inset 12px 12px 24px hsl(var(--neuro-shadow-dark) / 0.6),
-    inset -12px -12px 24px hsl(var(--neuro-shadow-light) / 0.15),
-    2px 2px 4px hsl(var(--neuro-shadow-dark) / 0.3);
-}
+/* Dark mode tweaks for uniform shadow and active emphasis */
+.dark .shadow-uniform { box-shadow: 0 10px 24px hsl(var(--neuro-shadow-dark) / 0.5); border: 1px solid hsl(var(--border)); }
 
-.dark .message-bubble:hover {
-  box-shadow: 
-    12px 12px 24px hsl(var(--neuro-shadow-dark) / 0.6),
-    -12px -12px 24px hsl(var(--neuro-shadow-light) / 0.2),
-    inset 1px 1px 2px hsl(var(--neuro-shadow-light) / 0.1);
-}
+.dark .active-note { box-shadow: 0 0 0 2px hsl(var(--ring) / 0.45), 0 12px 28px hsl(var(--neuro-shadow-dark) / 0.55); border: 1px solid hsl(var(--ring) / 0.6); }
+
+.dark .neuro-inset { box-shadow: inset 0 2px 6px hsl(var(--neuro-shadow-dark) / 0.5); }
+
+.dark .message-bubble:hover { box-shadow: 0 12px 28px hsl(var(--neuro-shadow-dark) / 0.55); }

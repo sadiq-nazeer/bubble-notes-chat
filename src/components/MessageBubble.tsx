@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Message } from '../store/notesStore';
 import { useMessageEdit } from '../hooks/useMessageEdit';
-import MessageTimestamp from './MessageTimestamp';
+import { Message } from '../store/notesStore';
 import MessageContent from './MessageContent';
-import MessageActions from './MessageActions';
+import MessageTimestamp from './MessageTimestamp';
 
 interface MessageBubbleProps {
   message: Message;
@@ -25,10 +24,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
   } = useMessageEdit(message);
 
   return (
-    <div className="flex justify-start group py-0.5" ref={editContainerRef}>
-      <div className="flex items-start space-x-2 w-full max-w-3xl">
+    <div className="flex justify-start group py-0.5 w-full" ref={editContainerRef}>
+      <div className="flex items-start space-x-2 w-full">
         <MessageTimestamp message={message} />
-        
         <MessageContent
           message={message}
           isEditing={isEditing}
@@ -36,12 +34,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLast }) => {
           setEditContent={setEditContent}
           textareaRef={textareaRef}
           handleKeyDown={handleKeyDown}
-          handleEdit={handleEdit}
-        />
-        
-        <MessageActions
-          message={message}
-          isEditing={isEditing}
           handleEdit={handleEdit}
           handleSave={handleSave}
           handleCancel={handleCancel}
