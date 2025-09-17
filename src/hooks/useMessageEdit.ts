@@ -1,6 +1,6 @@
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNotesStore, Message } from '../store/notesStore';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Message, useNotesStore } from '../store/notesStore';
 
 export const useMessageEdit = (message: Message) => {
   const { editMessage } = useNotesStore();
@@ -12,9 +12,12 @@ export const useMessageEdit = (message: Message) => {
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(editContent.length, editContent.length);
+      // Only set cursor to end when first entering edit mode, not on every content change
+      if (editContent === message.content) {
+        textareaRef.current.setSelectionRange(editContent.length, editContent.length);
+      }
     }
-  }, [isEditing, editContent]);
+  }, [isEditing, editContent, message.content]);
 
   const handleEdit = () => {
     setIsEditing(true);

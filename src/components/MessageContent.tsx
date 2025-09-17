@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Message } from '../store/notesStore';
 import MessageActions from './MessageActions';
 
@@ -128,6 +128,14 @@ const MessageContent: React.FC<MessageContentProps> = ({
   handleSave,
   handleCancel
 }) => {
+  // Auto-resize textarea to fit content
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [isEditing, editContent, textareaRef]);
 
   const renderContent = () => {
     if (isEditing) {
@@ -138,9 +146,14 @@ const MessageContent: React.FC<MessageContentProps> = ({
           onChange={(e) => setEditContent(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleSave}
-          className="w-full bg-transparent border border-border rounded-lg p-2 outline-none text-foreground placeholder-muted-foreground resize-none leading-snug focus:ring-2 focus:ring-primary/50 focus:border-primary"
-          rows={Math.max(2, editContent.split('\n').length)}
+          className="w-full bg-transparent border-none outline-none text-foreground placeholder-muted-foreground resize-none leading-relaxed"
           placeholder="Type your message... Use # for headings, **bold**, *italic*, `code`"
+          style={{ 
+            minHeight: '24px', // Single line minimum
+            lineHeight: '1.625', // leading-relaxed
+            overflow: 'hidden',
+            height: 'auto'
+          }}
         />
       );
     }
@@ -270,7 +283,7 @@ const MessageContent: React.FC<MessageContentProps> = ({
         </div>
       )}
       
-      <div className="text-foreground w-full ">{renderContent()}</div>
+      <div className="text-foreground w-full">{renderContent()}</div>
 
       <div
         className="absolute -top-3 -right-3"

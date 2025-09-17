@@ -1,6 +1,7 @@
 
 import { Bold, Heading1, Heading2, Heading3, Image as ImageIcon, Italic, List, ListOrdered, Type } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 interface RichTextEditorProps {
   onContentChange: (content: string) => void;
@@ -38,7 +39,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [selectedFormat, setSelectedFormat] = useState<LineFormatType>('plain');
   const [activeInlineFormats, setActiveInlineFormats] = useState<Set<InlineFormatType>>(new Set());
+  const [forceUpdate, setForceUpdate] = useState(0); // Force re-render counter
+
+  // Force update counter for overlay synchronization
+  const forceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const prefixOverlayRef = useRef<HTMLDivElement>(null);
 
   const formatButtons: Array<{ key: LineFormatType; label: string; icon: typeof Type }>= [
     { key: 'plain', label: 'Normal', icon: Type },
@@ -54,8 +61,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     { key: 'italic', label: 'Italic', icon: Italic },
   ];
 
-  const getLinePrefix = (type: LineFormatType) => {
-    switch (type) {
+  const getLinePrefix = (type: LineFormatType | undefined) => {
+    const safeType = type || 'plain';
+    switch (safeType) {
       case 'h1': return '# ';
       case 'h2': return '## ';
       case 'h3': return '### ';
@@ -65,8 +73,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
-  const getVisualPrefix = (type: LineFormatType, index: number, allLines: LineFormat[]) => {
-    switch (type) {
+  const getVisualPrefix = (type: LineFormatType | undefined, index: number, allLines: LineFormat[]) => {
+    const safeType = type || 'plain';
+    switch (safeType) {
       case 'plain': return 'N';
       case 'h1': return 'H1';
       case 'h2': return 'H2';
@@ -76,9 +85,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         // Calculate the correct number for ordered lists
         let olNumber = 1;
         for (let i = 0; i < index; i++) {
-          if (allLines[i].type === 'ol') {
+          if (allLines[i]?.type === 'ol') {
             olNumber++;
-          } else if (allLines[i].type !== 'ol') {
+          } else if (allLines[i]?.type !== 'ol') {
             // Reset numbering when we encounter a non-ol line
             olNumber = 1;
           }
@@ -118,10 +127,306 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     setActiveInlineFormats(new Set());
     if (textareaRef.current) {
       textareaRef.current.value = '';
+      // Reset height to minimum
+      textareaRef.current.style.height = '48px';
+    }
+    if (overlayRef.current) {
+      overlayRef.current.scrollTop = 0;
+    }
+    if (prefixOverlayRef.current) {
+      prefixOverlayRef.current.scrollTop = 0;
     }
   };
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  // Sync overlay scroll with textarea scroll
+  const handleTextareaScroll = () => {
+    if (textareaRef.current) {
+      const scrollTop = textareaRef.current.scrollTop;
+      if (overlayRef.current) {
+        overlayRef.current.scrollTop = scrollTop;
+      }
+      if (prefixOverlayRef.current) {
+        prefixOverlayRef.current.scrollTop = scrollTop;
+      }
+    }
+  };
+
+  // Detect and convert markdown-like syntax to line formats
+  const detectMarkdownFormat = (lineContent: string): { type: LineFormatType; content: string; inlineFormats: Array<{start: number; end: number; type: InlineFormatType}> } => {
+    const trimmed = lineContent.trim();
+
+    // Heading detection (most specific first)
+    if (trimmed.startsWith('### ')) {
+      return { type: 'h3', content: trimmed.substring(4), inlineFormats: [] };
+    }
+    if (trimmed.startsWith('## ')) {
+      return { type: 'h2', content: trimmed.substring(3), inlineFormats: [] };
+    }
+    if (trimmed.startsWith('# ')) {
+      return { type: 'h1', content: trimmed.substring(2), inlineFormats: [] };
+    }
+
+    // Alternative heading formats
+    if (trimmed.toLowerCase().startsWith('heading ') || trimmed.toLowerCase().startsWith('header ')) {
+      return { type: 'h1', content: trimmed, inlineFormats: [] };
+    }
+
+    // List detection
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+      return { type: 'ul', content: trimmed.substring(2), inlineFormats: [] };
+    }
+
+    // Ordered list detection (1. 2. 3. etc., or i. ii. iii., or a. b. c.)
+    if (/^\d+\.\s/.test(trimmed) || /^[a-z]+\.\s/.test(trimmed) || /^[ivxlcdm]+\.\s/.test(trimmed)) {
+      const match = trimmed.match(/^([a-z0-9]+)\.\s(.*)$/i);
+      if (match) {
+        return { type: 'ol', content: match[2], inlineFormats: [] };
+      }
+    }
+
+    // Task list detection
+    if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ') || trimmed.startsWith('* [ ] ') || trimmed.startsWith('* [x] ')) {
+      return { type: 'ul', content: trimmed.substring(6), inlineFormats: [] };
+    }
+
+    // Code block detection
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      return { type: 'plain', content: trimmed, inlineFormats: [] };
+    }
+    if (trimmed.startsWith('`') && trimmed.endsWith('`') && trimmed.length > 2) {
+      return { type: 'plain', content: trimmed, inlineFormats: [] };
+    }
+
+    // Quote detection
+    if (trimmed.startsWith('> ') || trimmed.startsWith('"') || trimmed.startsWith("'")) {
+      return { type: 'plain', content: trimmed.startsWith('> ') ? trimmed.substring(2) : trimmed, inlineFormats: [] };
+    }
+
+    // Horizontal rule detection
+    if (/^[-*_]{3,}$/.test(trimmed)) {
+      return { type: 'plain', content: '', inlineFormats: [] };
+    }
+
+    // Default to plain text
+    return { type: 'plain', content: lineContent, inlineFormats: [] };
+  };
+
+  // Handle paste event with markdown detection
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text/plain');
+
+    if (pastedText && pastedText.includes('\n')) {
+      e.preventDefault();
+
+      const textarea = e.currentTarget;
+      const cursorPos = textarea.selectionStart;
+      const currentValue = textarea.value;
+
+      // Insert pasted text at cursor position
+      const newValue = currentValue.substring(0, cursorPos) + pastedText + currentValue.substring(cursorPos);
+
+      // Update textarea value directly
+      textarea.value = newValue;
+
+      // Calculate new cursor position (after the pasted text)
+      const newCursorPos = cursorPos + pastedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+      // Trigger the normal change handler to process the new content
+      const syntheticEvent = {
+        target: textarea,
+        currentTarget: textarea
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+
+      handleTextChange(syntheticEvent);
+
+      // Force overlay synchronization and ensure cursor is visible
+      setTimeout(() => {
+        forceOverlaySync();
+        autoResize();
+        setForceUpdate(prev => prev + 1);
+      }, 10);
+
+      setTimeout(() => {
+        ensureCursorVisible();
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 50);
+    } else {
+      // Single line paste - handle it the same way but simpler
+      e.preventDefault();
+
+      const textarea = e.currentTarget;
+      const cursorPos = textarea.selectionStart;
+      const currentValue = textarea.value;
+
+      // Insert pasted text at cursor position
+      const newValue = currentValue.substring(0, cursorPos) + pastedText + currentValue.substring(cursorPos);
+
+      // Update textarea value directly
+      textarea.value = newValue;
+
+      // Calculate new cursor position (after the pasted text)
+      const newCursorPos = cursorPos + pastedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+      // Trigger the normal change handler to process the new content
+      const syntheticEvent = {
+        target: textarea,
+        currentTarget: textarea
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+
+      handleTextChange(syntheticEvent);
+
+      // Force overlay synchronization and ensure cursor is visible
+      setTimeout(() => {
+        forceOverlaySync();
+        autoResize();
+        setForceUpdate(prev => prev + 1);
+      }, 10);
+
+      setTimeout(() => {
+        ensureCursorVisible();
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 50);
+    }
+  };
+
+  // Auto-resize function with dynamic height and reasonable maximum
+  const autoResize = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const minHeight = 48; // 2 lines minimum
+      const maxHeight = 320; // Reasonable maximum height for good UX
+      
+      const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+      textareaRef.current.style.height = `${newHeight}px`;
+      
+      // Keep scrolling enabled for better UX
+        textareaRef.current.style.overflowY = 'auto';
+    }
+  };
+
+  // Force immediate synchronization of overlays
+  const forceOverlaySync = useCallback(() => {
+    if (overlayRef.current && textareaRef.current) {
+      const textarea = textareaRef.current;
+      const overlay = overlayRef.current;
+
+      // Sync scroll position
+      overlay.scrollTop = textarea.scrollTop;
+      overlay.scrollLeft = textarea.scrollLeft;
+
+      if (prefixOverlayRef.current) {
+        prefixOverlayRef.current.scrollTop = textarea.scrollTop;
+        prefixOverlayRef.current.scrollLeft = textarea.scrollLeft;
+      }
+
+      // Force re-render of overlays
+      setForceUpdate(prev => prev + 1);
+
+      // Clear any existing timeout
+      if (forceUpdateTimeoutRef.current) {
+        clearTimeout(forceUpdateTimeoutRef.current);
+      }
+    }
+  }, []);
+
+
+  // Ensure cursor is visible - handles pasted content and manual typing
+  const ensureCursorVisible = () => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+
+      // Simple and reliable approach: use textarea's built-in scroll behavior
+      // Get the cursor position and ensure it's visible
+      const cursorPos = textarea.selectionStart;
+
+      // Use the textarea's scrollHeight and clientHeight to determine if scrolling is needed
+      const textBeforeCursor = textarea.value.substring(0, cursorPos);
+      const linesBeforeCursor = textBeforeCursor.split('\n').length - 1; // Number of line breaks before cursor
+
+      // Approximate line height (this is simpler than measuring text)
+      const computedStyle = window.getComputedStyle(textarea);
+      const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.2;
+
+      // Calculate approximate position of cursor
+      const cursorY = linesBeforeCursor * lineHeight;
+
+      // Get visible area bounds
+      const visibleTop = textarea.scrollTop;
+      const visibleBottom = visibleTop + textarea.clientHeight;
+
+      // Check if cursor is outside visible area and scroll accordingly
+      if (cursorY < visibleTop) {
+        // Cursor is above visible area - scroll up to show cursor
+        textarea.scrollTop = Math.max(0, cursorY - lineHeight);
+      } else if (cursorY > visibleBottom - lineHeight) {
+        // Cursor is below visible area - scroll down to show cursor
+        textarea.scrollTop = cursorY - textarea.clientHeight + lineHeight * 2;
+      }
+
+      // Also sync overlays after scrolling
+      if (overlayRef.current) {
+        overlayRef.current.scrollTop = textarea.scrollTop;
+      }
+      if (prefixOverlayRef.current) {
+        prefixOverlayRef.current.scrollTop = textarea.scrollTop;
+      }
+    }
+  };
+
+  // Set initial height on mount and handle window resize
+  useEffect(() => {
+    autoResize();
+    
+    const handleResize = () => {
+      autoResize();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Auto-resize when lines change (including after paste)
+  useEffect(() => {
+    // Small delay to ensure DOM has updated after state change
+    const timeoutId = setTimeout(() => {
+      autoResize();
+      // Ensure overlays are synchronized after state changes
+      if (overlayRef.current && textareaRef.current) {
+        const textarea = textareaRef.current;
+        const overlay = overlayRef.current;
+
+        // Sync scroll position
+        overlay.scrollTop = textarea.scrollTop;
+        overlay.scrollLeft = textarea.scrollLeft;
+
+        if (prefixOverlayRef.current) {
+          prefixOverlayRef.current.scrollTop = textarea.scrollTop;
+          prefixOverlayRef.current.scrollLeft = textarea.scrollLeft;
+        }
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [lines]);
+
+  // Cleanup force update timeout on unmount
+  useEffect(() => {
+    const currentTimeout = forceUpdateTimeoutRef.current;
+    return () => {
+      if (currentTimeout) {
+        clearTimeout(currentTimeout);
+      }
+    };
+  }, []);
+
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const textLines = value.split('\n');
     const newLines: LineFormat[] = [];
@@ -163,10 +468,24 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           });
         }
       }
+
+      // Detect markdown format for new content or changed lines
+      let lineType = existingLine?.type || (index === currentLineIndex ? selectedFormat : 'plain');
+      let processedContent = lineContent;
+
+      // Only auto-detect format for lines that are being added or significantly changed
+      if (!existingLine || existingLine.content !== lineContent) {
+        // Check if the line content has markdown syntax that should be converted
+        const detectedFormat = detectMarkdownFormat(lineContent);
+        if (detectedFormat.type !== 'plain') {
+          lineType = detectedFormat.type;
+          processedContent = detectedFormat.content;
+        }
+      }
       
       newLines.push({
-        type: existingLine?.type || (index === currentLineIndex ? selectedFormat : 'plain'),
-        content: lineContent,
+        type: lineType,
+        content: processedContent,
         inlineFormats: inlineFormats
       });
     });
@@ -176,8 +495,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       newLines.push({ type: 'plain', content: '', inlineFormats: [] });
     }
 
-    setLines(newLines);
-    updateContent(newLines);
+    // Use flushSync for synchronous state updates during typing to prevent cursor jumping
+    flushSync(() => {
+      setLines(newLines);
+      updateContent(newLines);
+    });
+
+    // Auto-resize textarea based on content
+    autoResize();
 
     // Update current line index based on cursor position
     let lineIndex = 0;
@@ -191,20 +516,21 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
     setCurrentLineIndex(lineIndex);
     setSelectedFormat(newLines[lineIndex]?.type || 'plain');
-  };
+  }, [lines, currentLineIndex, selectedFormat, activeInlineFormats]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const updateContent = (newLines: LineFormat[]) => {
+  const updateContent = useCallback((newLines: LineFormat[]) => {
     let olCounter = 1;
     const formattedContent = newLines.map((line, index) => {
       let content = line.content;
-      
+
       // Apply inline formatting
-      const sortedFormats = [...line.inlineFormats].sort((a, b) => b.start - a.start);
+      const inlineFormats = line.inlineFormats || [];
+      const sortedFormats = [...inlineFormats].sort((a, b) => b.start - a.start);
       sortedFormats.forEach(format => {
         const before = content.slice(0, format.start);
         const middle = content.slice(format.start, format.end);
         const after = content.slice(format.end);
-        
+
         const wrapper = format.type === 'bold' ? '**' : '*';
         content = before + wrapper + middle + wrapper + after;
       });
@@ -216,7 +542,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         case 'h2': prefix = '## '; break;
         case 'h3': prefix = '### '; break;
         case 'ul': prefix = '- '; break;
-        case 'ol': 
+        case 'ol':
           // Reset counter if previous line was not an ordered list
           if (index === 0 || newLines[index - 1].type !== 'ol') {
             olCounter = 1;
@@ -224,7 +550,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           prefix = `${olCounter}. `;
           olCounter++;
           break;
-        default: 
+        default:
           olCounter = 1; // Reset counter for non-ol lines
           break;
       }
@@ -232,17 +558,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }).join('\n');
 
     onContentChange(formattedContent);
-  };
+  }, [onContentChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       if (e.shiftKey) {
         // Shift+Enter: new line with appropriate formatting
         e.preventDefault();
-        const textarea = e.currentTarget;
-        const cursorPos = textarea.selectionStart;
-        const value = textarea.value;
-        const newValue = value.slice(0, cursorPos) + '\n' + value.slice(cursorPos);
         
         const currentLine = lines[currentLineIndex];
         const newLines = [...lines];
@@ -255,16 +577,77 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           newLineFormat = currentLine.type;
         }
         
-        newLines.splice(newLineIndex, 0, { type: newLineFormat, content: '', inlineFormats: [] });
+        // Calculate cursor position within the current line more accurately
+        const textarea = e.currentTarget;
+        const cursorPos = textarea.selectionStart;
+
+        // Get the current textarea value to calculate line positions
+        const textareaValue = textarea.value;
+        const textLines = textareaValue.split('\n');
+
+        // Find which line the cursor is currently on
+        let charCount = 0;
+        let actualCurrentLineIndex = 0;
+
+        for (let i = 0; i < textLines.length; i++) {
+          const lineLength = textLines[i].length;
+          if (cursorPos <= charCount + lineLength) {
+            actualCurrentLineIndex = i;
+            break;
+          }
+          charCount += lineLength + 1; // +1 for newline
+        }
+
+        // Update currentLineIndex if it's different
+        if (actualCurrentLineIndex !== currentLineIndex) {
+          setCurrentLineIndex(actualCurrentLineIndex);
+        }
+
+        // Calculate relative cursor position within the current line
+        let lineStartPos = 0;
+        for (let i = 0; i < actualCurrentLineIndex; i++) {
+          lineStartPos += textLines[i].length + 1; // +1 for newline
+        }
+
+        const relativeCursorPos = cursorPos - lineStartPos;
+        const currentLineContent = textLines[actualCurrentLineIndex] || '';
+
+        // Split the current line content at cursor position
+        const beforeCursor = currentLineContent.substring(0, relativeCursorPos);
+        const afterCursor = currentLineContent.substring(relativeCursorPos);
+
+        // Update current line with content before cursor
+        newLines[actualCurrentLineIndex] = {
+          ...newLines[actualCurrentLineIndex],
+          content: beforeCursor
+        };
+
+        // Insert new line at the correct position
+        const actualNewLineIndex = actualCurrentLineIndex + 1;
+        newLines.splice(actualNewLineIndex, 0, {
+          type: newLineFormat,
+          content: afterCursor, // Put remaining content in new line
+          inlineFormats: []
+        });
+
         setLines(newLines);
-        setCurrentLineIndex(newLineIndex);
+        setCurrentLineIndex(actualNewLineIndex);
         setSelectedFormat(newLineFormat);
-        
-        // Update textarea value and cursor position
+
+        // Update content for parent component
+        updateContent(newLines);
+
+        // Position cursor at the start of the new line
         setTimeout(() => {
           if (textareaRef.current) {
-            textareaRef.current.value = newValue;
-            textareaRef.current.setSelectionRange(cursorPos + 1, cursorPos + 1);
+            // Calculate cursor position for the start of the new line
+            let charCount = 0;
+            for (let i = 0; i < actualNewLineIndex; i++) {
+              charCount += newLines[i].content.length + 1; // +1 for newline
+            }
+
+            textareaRef.current.setSelectionRange(charCount, charCount);
+            ensureCursorVisible();
           }
         }, 0);
       } else {
@@ -377,18 +760,22 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       </div>
 
       {/* Rich Text Input */}
-      <div className="neuro-inset rounded-xl relative" onClick={() => textareaRef.current?.focus()}>
+      <div className="neuro-inset rounded-xl relative overflow-hidden max-h-80" onClick={() => textareaRef.current?.focus()}>
         {/* Visual prefixes overlay */}
-        <div className="absolute left-0 top-0 z-10 p-3 pointer-events-none">
+        <div key={`prefix-${forceUpdate}`} ref={prefixOverlayRef} className="absolute left-0 top-0 z-10 p-3 pointer-events-none select-none overflow-auto scrollbar-hide" style={{
+          maxHeight: '320px',
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none', // IE/Edge
+        }}>
           {lines.map((line, index) => {
             const visualPrefix = getVisualPrefix(line.type, index, lines);
             return (
               <div key={index} className="flex items-center min-h-[1.5rem]">
                 {visualPrefix && (
                   <span className={`text-[10px] font-medium mr-2 px-1 py-0.5 rounded leading-none ${
-                    line.type.startsWith('h') 
+                    (line.type || 'plain').startsWith('h')
                       ? 'text-primary/80 bg-primary/10' 
-                      : line.type === 'plain'
+                      : (line.type || 'plain') === 'plain'
                       ? 'text-muted-foreground/60 bg-muted-foreground/5'
                       : 'text-muted-foreground'
                   }`}>
@@ -405,6 +792,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           value={lines.map(line => line.content).join('\n')}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
+          onFocus={ensureCursorVisible}
+          onScroll={handleTextareaScroll}
+          onPaste={handlePaste}
           
           placeholder={placeholder}
           className="w-full bg-transparent border-none outline-none text-transparent placeholder-muted-foreground resize-none text-sm pr-20 relative z-20"
@@ -413,25 +803,36 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             paddingTop: '12px',
             paddingBottom: '12px',
             lineHeight: '1.5rem',
-            caretColor: 'hsl(var(--foreground))'
+            caretColor: 'hsl(var(--foreground))',
+            minHeight: '48px', // 2 lines minimum
+            maxHeight: '320px', // Fixed max height for scrolling
+            overflowY: 'auto', // Always enable scrolling
+            scrollbarWidth: 'thin', // For Firefox
+            scrollbarColor: 'hsl(var(--border)) transparent' // For Firefox
           }}
-          rows={Math.max(2, lines.length)}
         />
         
         {/* Text formatting overlay */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-15">
-          <div 
-            className="text-sm whitespace-pre-wrap break-words text-muted-foreground"
+        <div key={`overlay-${forceUpdate}`} ref={overlayRef} className="absolute inset-0 pointer-events-none overflow-auto z-15 select-none scrollbar-hide" style={{
+          maxHeight: '320px',
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none', // IE/Edge
+        }}>
+          <div
+            className="text-sm whitespace-pre-wrap break-words text-foreground caret-transparent"
             style={{
               paddingLeft: lines.some((line, index) => getVisualPrefix(line.type, index, lines)) ? '60px' : '12px',
               paddingTop: '12px',
               paddingBottom: '12px',
-              lineHeight: '1.5rem'
+              lineHeight: '1.5rem',
+              minHeight: '48px',
+              pointerEvents: 'none',
+              userSelect: 'none'
             }}
           >
             {lines.map((line, lineIndex) => {
-              if (line.content === '') {
-                return <div key={lineIndex} style={{ minHeight: '1.5rem' }}>&nbsp;</div>;
+              if (line.content === '' || line.content.trim() === '') {
+                return <div key={lineIndex} style={{ minHeight: '1.5rem', lineHeight: '1.5rem' }}>&nbsp;</div>;
               }
               
               const chars = line.content.split('');

@@ -327,3 +327,13 @@
 .dark .neuro-inset { box-shadow: inset 0 2px 6px hsl(var(--neuro-shadow-dark) / 0.5); }
 
 .dark .message-bubble:hover { box-shadow: 0 12px 28px hsl(var(--neuro-shadow-dark) / 0.55); }
+
+/* Hide scrollbars for overlay elements */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
